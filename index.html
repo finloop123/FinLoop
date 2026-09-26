@@ -38,35 +38,6 @@
     @keyframes lockPulse   { 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
     @keyframes resetFlash  { 0%{opacity:0;} 20%{opacity:1;} 80%{opacity:1;} 100%{opacity:0;} }
 
-    /* ============================================================
-       DEVICE GATE — full screen logo (background PUTIH)
-       ============================================================ */
-    .device-gate {
-        position: fixed; inset: 0;
-        background: #ffffff;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-    }
-    .device-gate.show { display: flex; }
-    .device-gate img {
-        display: block;
-        width: min(280px, 55vw);
-        height: auto;
-        object-fit: contain;
-        user-select: none;
-        pointer-events: none;
-        -webkit-user-drag: none;
-        animation: fadeUp .6s cubic-bezier(.22,.9,.32,1) both;
-    }
-
-    /* Saat gate aktif, sembunyikan dashboard */
-    body.gate-active .sidebar,
-    body.gate-active .main {
-        display: none !important;
-    }
-
     /* SIDEBAR */
     .sidebar {
         position:fixed; top:8px; left:8px; bottom:8px;
@@ -612,10 +583,6 @@
 </style>
 </head>
 <body>
-    <div class="device-gate" id="deviceGate">
-        <img src="logo.webp" alt="FinLoop">
-    </div>
-
     <aside class="sidebar">
         <div class="sidebar-header">
             <img class="thumb" src="logo.webp" alt="Logo">
@@ -849,93 +816,6 @@
         const REQ_TIMEOUT_MS = 45000;
         const MAX_RETRY      = 3;
         const RETRY_DELAY_MS = 1500;
-
-        /* ============================================================
-           DEVICE GATE — KONFIGURASI
-           ------------------------------------------------------------
-           true  → device tsb HANYA tampil logo (dashboard hidden)
-           false → device tsb tampil dashboard normal
-
-           Test manual via URL:
-           - ?device=mobile   → paksa jadi mobile
-           - ?device=laptop   → paksa jadi laptop
-           - ?device=desktop  → paksa jadi desktop
-           ============================================================ */
-        const DEVICE_GATE = {
-            mobile:  true,    // HP → gate (logo saja)
-            laptop:  false,   // Laptop → dashboard normal
-            desktop: true     // Desktop FHD+ → gate (logo saja)
-        };
-
-        /* Deteksi tipe device (async) */
-        async function detectDeviceTypeAsync() {
-            /* ---- Override via URL (?device=...) ---- */
-            try {
-                const override = new URLSearchParams(location.search).get('device');
-                if (override === 'mobile' || override === 'laptop' || override === 'desktop') {
-                    console.log('[FinLoop] Device override dari URL:', override);
-                    return override;
-                }
-            } catch (_) {}
-
-            const ua = (navigator.userAgent || '').toLowerCase();
-
-            /* ---- 1) MOBILE ---- */
-            const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/.test(ua);
-            const sMax = Math.max(screen.width, screen.height);
-            const isMobileScreen = sMax < 1024;
-
-            if (isMobileUA || isMobileScreen) {
-                console.log('[FinLoop] Detected: mobile (UA=' + isMobileUA + ', sMax=' + sMax + ')');
-                return 'mobile';
-            }
-
-            /* ---- 2) BATTERY API — cek apakah real atau fake ---- */
-            if ('getBattery' in navigator) {
-                try {
-                    const battery = await navigator.getBattery();
-                    if (battery && typeof battery.level === 'number') {
-                        console.log('[FinLoop] Battery:', {
-                            level: battery.level,
-                            charging: battery.charging,
-                            chargingTime: battery.chargingTime,
-                            dischargingTime: battery.dischargingTime
-                        });
-
-                        // Desktop TANPA baterai → Chrome balik nilai default ini
-                        const isFakeDesktopBattery =
-                            battery.level === 1 &&
-                            battery.chargingTime === 0 &&
-                            battery.dischargingTime === Infinity;
-
-                        if (isFakeDesktopBattery) {
-                            console.log('[FinLoop] Battery API balik default → desktop');
-                            return 'desktop';
-                        } else {
-                            console.log('[FinLoop] Battery real → laptop');
-                            return 'laptop';
-                        }
-                    }
-                } catch (err) {
-                    console.log('[FinLoop] getBattery error:', err.message);
-                    return 'desktop';
-                }
-            } else {
-                // getBattery tidak ada (Firefox/Safari) → heuristik screen size
-                console.log('[FinLoop] getBattery tidak tersedia → pakai screen size');
-                if (screen.width >= 1920 && screen.height >= 1080) {
-                    return 'desktop';
-                }
-                return 'laptop';
-            }
-
-            return 'desktop';
-        }
-
-        async function shouldGateDeviceAsync() {
-            const type = await detectDeviceTypeAsync();
-            return DEVICE_GATE[type] === true;
-        }
 
         /* ============================================================
            SECURITY
@@ -1608,16 +1488,6 @@
            ============================================================ */
         async function init() {
             initSecurity();
-
-            /* ---- DEVICE GATE CHECK (async) ---- */
-            const gate = await shouldGateDeviceAsync();
-            if (gate) {
-                document.body.classList.add('gate-active');
-                $('deviceGate').classList.add('show');
-                return; // stop — jangan jalankan dashboard
-            }
-            /* ----------------------------------- */
-
             initInput();
             initChartTags();
             initVerify();
