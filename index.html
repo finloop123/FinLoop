@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>FinLoop — Dashboard</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+        width:100%; height:100%; overflow:hidden;
+        background:#f4f5f7;
+        font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing:antialiased;
+        color:#18181b;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-user-drag: none;
+        -webkit-touch-callout: none;
+    }
+    input, textarea { user-select: text; -webkit-user-select: text; }
+    img { -webkit-user-drag: none; user-drag: none; pointer-events: none; }
+
+    @keyframes slideInLeft { from{opacity:0;transform:translateX(-32px);} to{opacity:1;transform:translateX(0);} }
+    @keyframes fadeUp      { from{opacity:0;transform:translateY(16px);}  to{opacity:1;transform:translateY(0);} }
+    @keyframes fadeDown    { from{opacity:0;transform:translateY(-10px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes fadeRight   { from{opacity:0;transform:translateX(-14px);} to{opacity:1;transform:translateX(0);} }
+    @keyframes fadeLeft    { from{opacity:0;transform:translateX(14px);}  to{opacity:1;transform:translateX(0);} }
+    @keyframes wipeRight   { from{clip-path:inset(0 100% 0 0);opacity:.85;} to{clip-path:inset(0 0 0 0);opacity:1;} }
+    @keyframes scaleIn     { 0%{opacity:0;transform:scale(.94) translateY(10px);} 60%{opacity:1;} 100%{opacity:1;transform:scale(1) translateY(0);} }
+    @keyframes cellPop     { 0%{opacity:0;transform:scale(.2);} 70%{opacity:1;transform:scale(1.12);} 100%{opacity:1;transform:scale(1);} }
+    @keyframes growBar     { 0%{transform:scaleY(0);} 70%{transform:scaleY(1.06);} 100%{transform:scaleY(1);} }
+    @keyframes pulseRing   { 0%{opacity:.7;transform:scale(1);} 100%{opacity:0;transform:scale(1.18);} }
+    @keyframes shimmer     { 0%{transform:translateX(-120%) skewX(-18deg);} 100%{transform:translateX(220%) skewX(-18deg);} }
+    @keyframes flipIn      { 0%{opacity:0;transform:perspective(900px) rotateY(-42deg) scale(.85);} 60%{opacity:1;} 100%{opacity:1;transform:perspective(900px) rotateY(0) scale(1);} }
+    @keyframes underlineSweep { from{transform:scaleX(0);opacity:0;} to{transform:scaleX(1);opacity:1;} }
+    @keyframes modalIn     { from{opacity:0;transform:translateY(20px) scale(.96);} to{opacity:1;transform:translateY(0) scale(1);} }
+    @keyframes shake       { 0%,100%{transform:translateX(0);} 15%,45%,75%{transform:translateX(-8px);} 30%,60%,90%{transform:translateX(8px);} }
+    @keyframes lockPulse   { 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
+    @keyframes resetFlash  { 0%{opacity:0;} 20%{opacity:1;} 80%{opacity:1;} 100%{opacity:0;} }
+
+    /* ============================================================
+       DEVICE GATE — full screen logo (background PUTIH)
+       ============================================================ */
+    .device-gate {
+        position: fixed; inset: 0;
+        background: #ffffff;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+    }
+    .device-gate.show { display: flex; }
+    .device-gate img {
+        display: block;
+        width: min(280px, 55vw);
+        height: auto;
+        object-fit: contain;
+        user-select: none;
+        pointer-events: none;
+        -webkit-user-drag: none;
+        animation: fadeUp .6s cubic-bezier(.22,.9,.32,1) both;
+    }
+
+    /* Saat gate aktif, sembunyikan dashboard */
+    body.gate-active .sidebar,
+    body.gate-active .main {
+        display: none !important;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+        position:fixed; top:8px; left:8px; bottom:8px;
+        width:260px; background:#fff; border-radius:14px;
+        box-shadow:0 8px 30px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.04);
+        overflow:hidden; z-index:10;
+        display:flex; flex-direction:column;
+        animation: slideInLeft .75s cubic-bezier(.22,.9,.32,1) both;
+    }
+    .sidebar-header {
+        padding:12px; display:flex; justify-content:center; flex-shrink:0;
+        position:relative;
+        animation: fadeUp .6s .35s cubic-bezier(.4,0,.2,1) both;
+    }
+    .sidebar-header::after {
+        content:""; position:absolute; top:12px; left:12px; right:12px; bottom:12px;
+        border-radius:8px;
+        background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%);
+        pointer-events:none;
+        animation: shimmer 1.6s .55s ease-out 1 both;
+    }
+    .sidebar-header .thumb { display:block; width:200px; aspect-ratio:20/9; object-fit:cover; border-radius:8px; }
+    .nav { flex:1; min-height:0; overflow:hidden; padding:4px 10px 10px; display:flex; flex-direction:column; gap:2px; }
+
+    .nav-btn {
+        display:flex; align-items:center; gap:10px;
+        width:100%; padding:9px 12px;
+        background:transparent; border:none; border-radius:8px;
+        font-size:13.5px; font-weight:500; color:#2b2f36;
+        cursor:pointer; text-align:left; font-family:inherit;
+        transition:background .15s, color .15s; flex-shrink:0;
+        animation: fadeRight .55s .55s cubic-bezier(.4,0,.2,1) both;
+    }
+    .nav-btn:hover { background:#f4f5f7; }
+    .nav-btn.active { background:#eff6ff; color:#2563eb; }
+    .nav-btn.active .nav-icon { color:#2563eb; }
+    .nav-btn .nav-icon { flex-shrink:0; width:18px; height:18px; display:flex; align-items:center; justify-content:center; color:#6b7280; }
+    .nav-btn .nav-icon svg { width:16px; height:16px; stroke-width:1.9; }
+    .nav-btn .label { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .nav-input { padding:6px 0 4px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+    .nav-input-label {
+        font-size:10.5px; font-weight:600; color:#a0a4ab;
+        text-transform:uppercase; letter-spacing:.08em;
+        user-select:none; padding:0 12px;
+        animation: fadeRight .5s .75s cubic-bezier(.4,0,.2,1) both;
+    }
+    .nav-input-wrap {
+        display:flex; align-items:center; justify-content:center;
+        gap:5px; width:100%; padding:14px 12px;
+        background:#fff; border:1.5px solid #e5e7eb; border-radius:10px;
+        transition:border-color .15s, box-shadow .15s;
+        cursor:text;
+        animation: fadeRight .55s .82s cubic-bezier(.4,0,.2,1) both;
+    }
+    .nav-input-wrap:focus-within { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+    .nav-input-prefix { font-size:16px; font-weight:700; color:#a0a4ab; line-height:1; user-select:none; transition:opacity .12s; }
+    .nav-input-wrap:focus-within .nav-input-prefix { display:none; }
+    .nav-input-field {
+        border:none; outline:none; padding:0; margin:0; background:transparent;
+        font-size:16px; font-weight:700; color:#a0a4ab; font-family:inherit;
+        text-align:center; width:1ch; min-width:1ch; line-height:1;
+        font-variant-numeric:tabular-nums; -moz-appearance:textfield;
+    }
+    .nav-input-field::-webkit-outer-spin-button,
+    .nav-input-field::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .nav-input-field::placeholder { color:#a0a4ab; font-weight:700; }
+    .nav-input-wrap:focus-within .nav-input-field,
+    .nav-input-field.has-value { color:#18181b; }
+
+    .nav-note {
+        padding:2px 12px 0; display:flex; flex-direction:column; gap:2px;
+        animation: fadeRight .5s 1.05s cubic-bezier(.4,0,.2,1) both;
+    }
+    .nav-note-label { font-size:12.5px; font-weight:500; color:#a0a4ab; user-select:none; }
+    .nav-note-input {
+        width:100%; padding:4px 0 6px;
+        border:none; border-bottom:1.5px solid #e5e7eb;
+        background:transparent;
+        font-size:12.5px; font-weight:500; color:#18181b;
+        font-family:inherit; outline:none;
+        transition:border-color .15s;
+    }
+    .nav-note-input:focus { border-bottom-color:#2563eb; }
+
+    .nav-actions {
+        display:grid; grid-template-columns:1fr 1fr;
+        gap:8px; margin-top:2px;
+        animation: fadeRight .55s 1.22s cubic-bezier(.4,0,.2,1) both;
+    }
+    .btn-action {
+        display:flex; align-items:center; justify-content:center; gap:6px;
+        padding:10px 12px; border-radius:8px;
+        font-size:13px; font-weight:600; font-family:inherit; cursor:pointer;
+        border:1.5px solid transparent;
+        transition:background .15s, color .15s, border-color .15s, box-shadow .15s, transform .1s;
+        user-select:none;
+    }
+    .btn-action:active { transform:translateY(1px); }
+    .btn-action svg { width:15px; height:15px; stroke-width:2.2; flex-shrink:0; }
+    .btn-tarik { background:#f1f3f5; color:#4b5563; border-color:#e5e7eb; }
+    .btn-tarik:hover { background:#e5e7eb; color:#1f2937; }
+    .btn-masuk { background:#eff6ff; color:#2563eb; border-color:#dbeafe; }
+    .btn-masuk:hover { background:#dbeafe; color:#1d4ed8; border-color:#bfdbfe; }
+
+    .nav-history {
+        display:flex; align-items:center; justify-content:space-between;
+        width:100%; padding:14px 12px 6px;
+        background:transparent; border:none; font-family:inherit;
+        font-size:10.5px; font-weight:600; letter-spacing:.08em;
+        text-transform:uppercase; color:#a0a4ab;
+        text-align:left; cursor:pointer; user-select:none;
+        transition:color .15s;
+        animation: fadeRight .5s 1.45s cubic-bezier(.4,0,.2,1) both;
+    }
+    .nav-history:hover { color:#6b7280; }
+    .nav-history svg { width:12px; height:12px; stroke-width:2.2; flex-shrink:0; }
+
+    .history-list { display:flex; flex-direction:column; padding:2px 4px 4px; gap:0; }
+    .trx {
+        display:flex; align-items:center; gap:10px;
+        padding:9px 8px; border-radius:9px;
+        position:relative; transition:background .15s; cursor:default;
+    }
+    .trx:hover { background:#f7f8fa; }
+    .trx + .trx::before {
+        content:""; position:absolute;
+        left:34px; right:8px; top:0; height:1px; background:#f0f1f3;
+    }
+    .trx:hover::before, .trx:hover + .trx::before { background:transparent; }
+    .trx-icon { flex-shrink:0; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+    .trx-icon svg { width:12px; height:12px; stroke-width:2.5; }
+    .trx-in  .trx-icon { background:#eff6ff; color:#2563eb; }
+    .trx-out .trx-icon { background:#f1f3f5; color:#6b7280; }
+    .trx-info { flex:1; min-width:0; }
+    .trx-title {
+        font-size:12px; font-weight:600; color:#18181b;
+        line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        letter-spacing:-0.005em;
+    }
+    .trx-date {
+        font-size:10px; font-weight:500; color:#a0a4ab;
+        line-height:1.3; margin-top:2px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .trx-amount {
+        flex-shrink:0; font-size:12px; font-weight:700;
+        font-variant-numeric:tabular-nums;
+        white-space:nowrap; letter-spacing:-0.01em; text-align:right;
+    }
+    .trx-in  .trx-amount { color:#2563eb; }
+    .trx-out .trx-amount { color:#4b5563; }
+
+    .history-empty {
+        flex:1; min-height:0; display:none;
+        flex-direction:column; align-items:center; justify-content:center;
+        gap:6px; padding:10px 16px;
+        text-align:center; user-select:none;
+    }
+    .history-empty-icon {
+        display:flex; align-items:center; justify-content:center;
+        width:32px; height:32px; border-radius:50%;
+        background:#eff6ff; color:#93b4f5;
+    }
+    .history-empty-icon svg { width:16px; height:16px; stroke-width:1.9; }
+    .history-empty-text { font-size:11px; font-weight:600; color:#2563eb; line-height:1.4; }
+    .history-empty-sub { font-size:10px; color:#93b4f5; }
+
+    .bottom {
+        flex-shrink:0; padding:10px; border-top:1px solid #f0f1f3;
+        display:flex; flex-direction:column; gap:6px;
+    }
+    .account {
+        display:flex; align-items:center; gap:10px;
+        padding:8px 10px; border-radius:8px; background:#f7f8fa;
+        animation: fadeUp .55s 2.42s cubic-bezier(.4,0,.2,1) both;
+    }
+    .avatar {
+        width:28px; height:28px; border-radius:50%; flex-shrink:0;
+        background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+        display:flex; align-items:center; justify-content:center;
+        color:#fff; font-size:12px; font-weight:600;
+    }
+    .account-info { min-width:0; flex:1; }
+    .account-name { font-size:12.5px; font-weight:600; color:#2b2f36; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .account-email { font-size:11px; color:#9096a0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .logout {
+        display:flex; align-items:center; justify-content:center; gap:8px;
+        width:100%; padding:9px 12px; background:transparent;
+        border:none; border-radius:8px; font-size:13px; font-weight:500;
+        color:#2563eb; cursor:pointer; font-family:inherit;
+        animation: fadeUp .55s 2.58s cubic-bezier(.4,0,.2,1) both;
+    }
+    .logout:hover { background:#eff6ff; }
+    .logout svg { width:14px; height:14px; stroke-width:2; }
+
+    /* MAIN */
+    .main {
+        position:absolute; top:8px; right:8px; bottom:8px; left:276px;
+        padding:18px 22px 0; overflow:hidden;
+        display:flex; flex-direction:column; gap:18px;
+    }
+    .main-head { display:flex; flex-direction:column; align-self:stretch; width:100%; flex-shrink:0; }
+    .head-row { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; }
+    .main-title {
+        position:relative; font-size:26px; font-weight:500; color:#18181b;
+        letter-spacing:-0.02em; line-height:1.2; white-space:nowrap;
+        user-select:none;
+        animation: wipeRight 1s .25s cubic-bezier(.22,.9,.32,1) both;
+    }
+    .main-title .accent { color:#2563eb; }
+    .main-title::after {
+        content:""; position:absolute; left:0; bottom:-8px;
+        width:62px; height:2px; border-radius:2px;
+        background:linear-gradient(90deg, #2563eb, #93c5fd 70%, transparent);
+        transform-origin:left center;
+        animation: underlineSweep .75s 1.15s cubic-bezier(.22,.9,.32,1) both;
+    }
+    .buy-btn {
+        position:relative; display:inline-flex; align-items:center; gap:8px;
+        padding:9px 14px; background:#fff;
+        border:1.5px solid #2563eb; border-radius:10px;
+        font-family:inherit; font-size:12.5px; font-weight:600;
+        cursor:pointer; user-select:none;
+        transition:background .15s, color .15s, box-shadow .15s, transform .1s;
+        white-space:nowrap; flex-shrink:0; color:#18181b;
+        animation: fadeDown .55s .65s cubic-bezier(.4,0,.2,1) both;
+    }
+    .buy-btn::after {
+        content:""; position:absolute; inset:-1.5px;
+        border:1.5px solid #2563eb; border-radius:10px;
+        opacity:0; pointer-events:none;
+        animation: pulseRing 1.1s 1.55s ease-out 1 both;
+    }
+    .buy-btn:hover { background:#2563eb; color:#fff; box-shadow:0 4px 12px rgba(37,99,235,.25); }
+    .buy-btn:active { transform:translateY(1px); }
+    .buy-btn svg { width:14px; height:14px; stroke-width:2.4; flex-shrink:0; color:#18181b; transition:color .15s; }
+    .buy-btn:hover svg { color:#fff; }
+    .buy-btn .price { font-variant-numeric:tabular-nums; font-weight:700; letter-spacing:-0.01em; color:#2563eb; transition:color .15s; }
+    .buy-btn:hover .price { color:#fff; }
+
+    .top-row { display:flex; gap:14px; margin-top:14px; align-items:stretch; width:100%; }
+
+    .main-card {
+        width:340px; aspect-ratio:5/3; background:#fff; border-radius:12px;
+        box-shadow:0 1px 3px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05);
+        padding:14px 16px; position:relative; overflow:hidden; flex-shrink:0;
+        animation: scaleIn .75s .95s cubic-bezier(.22,.9,.32,1) both;
+    }
+    .card-label {
+        position:absolute; top:14px; left:16px;
+        font-size:12px; font-weight:600; letter-spacing:.02em; color:#5b6b85;
+        user-select:none;
+        animation: fadeRight .5s 1.20s cubic-bezier(.4,0,.2,1) both;
+    }
+    .card-amount {
+        position:absolute; top:42%; left:16px; transform:translateY(-50%);
+        font-size:28px; font-weight:700; color:#18181b; letter-spacing:-0.02em;
+        font-variant-numeric:tabular-nums; white-space:nowrap; user-select:none;
+        animation: fadeRight .5s 1.35s cubic-bezier(.4,0,.2,1) both;
+    }
+    .card-amount .rp { color:#2563eb; }
+    .card-photo {
+        position:absolute; right:14px; bottom:12px;
+        height:28%; width:auto; display:block; user-select:none; pointer-events:none;
+        animation: fadeUp .55s 1.55s cubic-bezier(.4,0,.2,1) both;
+    }
+    .card-account {
+        position:absolute; left:16px; bottom:38px;
+        display:flex; align-items:center; gap:4px; user-select:none;
+        animation: fadeRight .5s 1.42s cubic-bezier(.4,0,.2,1) both;
+    }
+    .card-account .dots { display:flex; align-items:center; gap:3px; }
+    .card-account .dots i { width:6px; height:6px; border-radius:50%; background:#a0a4ab; display:block; }
+    .card-account .num { font-size:13px; font-weight:700; color:#a0a4ab; letter-spacing:.08em; font-variant-numeric:tabular-nums; margin-left:2px; }
+
+    .stat-stack { flex:1; display:flex; flex-direction:column; gap:12px; min-width:0; }
+    .stat-card {
+        flex:1; background:#fff; border-radius:12px;
+        padding:12px 16px 12px 18px;
+        box-shadow:0 1px 3px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.04);
+        display:flex; align-items:center; gap:18px; min-width:0;
+    }
+    .stat-card.income  { animation: scaleIn .7s 1.75s cubic-bezier(.22,.9,.32,1) both; }
+    .stat-card.expense { animation: scaleIn .7s 2.35s cubic-bezier(.22,.9,.32,1) both; }
+    .stat-left { flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .stat-label {
+        font-size:11px; font-weight:700; color:#5b6b85; letter-spacing:.06em;
+        text-transform:uppercase;
+        animation: fadeRight .5s 1.90s cubic-bezier(.4,0,.2,1) both;
+    }
+    .stat-card.expense .stat-label { animation-delay: 2.50s; }
+    .stat-value {
+        font-size:24px; font-weight:700; color:#18181b; letter-spacing:-0.02em;
+        font-variant-numeric:tabular-nums; white-space:nowrap;
+        overflow:hidden; text-overflow:ellipsis; line-height:1.1;
+        animation: fadeRight .5s 1.98s cubic-bezier(.4,0,.2,1) both;
+    }
+    .stat-card.expense .stat-value { animation-delay: 2.58s; }
+    .stat-value.in  { color:#2563eb; }
+    .stat-value.out { color:#4b5563; }
+    .stat-right { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+    .stat-right-label {
+        font-size:9px; font-weight:700; color:#a0a4ab;
+        text-transform:uppercase; letter-spacing:.08em;
+        user-select:none; line-height:1;
+        animation: fadeLeft .5s 2.05s cubic-bezier(.4,0,.2,1) both;
+    }
+    .stat-card.expense .stat-right-label { animation-delay: 2.65s; }
+    .stat-heat {
+        display:grid;
+        grid-template-columns:repeat(10, 12px);
+        grid-template-rows:repeat(3, 12px);
+        gap:4px;
+    }
+    .stat-heat .heat {
+        width:12px; height:12px; border-radius:3px; background:#eff6ff;
+        display:block; transform-origin:center;
+        animation: cellPop .45s cubic-bezier(.34,1.4,.64,1) both;
+    }
+    .stat-card.income .heat.h0 { background:#eff6ff; }
+    .stat-card.income .heat.h1 { background:#dbeafe; }
+    .stat-card.income .heat.h2 { background:#93c5fd; }
+    .stat-card.income .heat.h3 { background:#60a5fa; }
+    .stat-card.income .heat.h4 { background:#2563eb; }
+    .stat-card.expense .heat.h0 { background:#f1f3f5; }
+    .stat-card.expense .heat.h1 { background:#e5e7eb; }
+    .stat-card.expense .heat.h2 { background:#d1d5db; }
+    .stat-card.expense .heat.h3 { background:#9ca3af; }
+    .stat-card.expense .heat.h4 { background:#4b5563; }
+
+    .charts-grid { flex:1; min-height:0; display:grid; grid-template-columns:2fr 1fr; gap:12px; }
+    .chart-card {
+        background:#fff; border-radius:12px; padding:16px 18px;
+        box-shadow:0 1px 3px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.04);
+        display:flex; flex-direction:column; gap:12px;
+        min-height:0; min-width:0;
+    }
+    .chart-card.chart-left { animation: scaleIn .8s 3.05s cubic-bezier(.22,.9,.32,1) both; }
+    .chart-card.about-card { animation: scaleIn .8s 2.90s cubic-bezier(.22,.9,.32,1) both; }
+    .chart-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-shrink:0; }
+    .chart-title {
+        font-size:13px; font-weight:700; color:#18181b; letter-spacing:-0.01em;
+        animation: fadeUp .5s 3.25s cubic-bezier(.4,0,.2,1) both;
+    }
+    .chart-sub {
+        font-size:11px; font-weight:500; color:#a0a4ab; margin-top:2px;
+        animation: fadeUp .5s 3.35s cubic-bezier(.4,0,.2,1) both;
+    }
+    .chart-head-right { display:flex; gap:6px; flex-shrink:0; }
+    .chart-tag {
+        font-size:10px; font-weight:600; padding:4px 10px; border-radius:20px;
+        background:#f4f5f7; color:#5b6b85;
+        user-select:none; cursor:pointer; border:none; font-family:inherit;
+        transition: background .15s, color .15s;
+    }
+    .chart-tag:nth-child(1) { animation: fadeLeft .5s 3.40s cubic-bezier(.4,0,.2,1) both; }
+    .chart-tag:nth-child(2) { animation: fadeLeft .5s 3.48s cubic-bezier(.4,0,.2,1) both; }
+    .chart-tag:nth-child(3) { animation: fadeLeft .5s 3.56s cubic-bezier(.4,0,.2,1) both; }
+    .chart-tag:hover { background:#e5e7eb; color:#2b2f36; }
+    .chart-tag.active { background:#eff6ff; color:#2563eb; }
+
+    .bars-area {
+        flex:1; min-height:0;
+        display:flex; align-items:flex-end; justify-content:space-around;
+        gap:12px; padding:12px 4px 0; position:relative;
+    }
+    .bars-area::before {
+        content:""; position:absolute; inset:12px 4px 22px;
+        background-image:
+            linear-gradient(#f0f1f3 1px, transparent 1px),
+            linear-gradient(#f0f1f3 1px, transparent 1px),
+            linear-gradient(#f0f1f3 1px, transparent 1px),
+            linear-gradient(#f0f1f3 1px, transparent 1px);
+        background-size: 100% calc(25% - 0.5px);
+        background-position: 0 0, 0 25%, 0 50%, 0 75%;
+        pointer-events:none; z-index:0;
+        animation: fadeUp .7s 3.60s cubic-bezier(.4,0,.2,1) both;
+    }
+    .bar-group {
+        flex:1; height:100%; display:flex; flex-direction:column;
+        align-items:center; justify-content:flex-end; gap:6px;
+        position:relative; z-index:1; min-width:0;
+    }
+    .bar-pair {
+        flex:1; width:100%; display:flex; align-items:flex-end;
+        justify-content:center; gap:4px; position:relative;
+    }
+    .bar {
+        flex:1; max-width:22px; min-height:3px;
+        border-radius:5px 5px 3px 3px;
+        transition:height .5s cubic-bezier(.4,0,.2,1), filter .15s;
+        position:relative; cursor:default; transform-origin:bottom center;
+        animation: growBar .85s cubic-bezier(.34,1.1,.64,1) both;
+    }
+    .bar.in  { background:linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,.35); }
+    .bar.out { background:linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,.35); }
+    .bar:hover { filter:brightness(1.08); }
+    .bar-tip {
+        position:absolute; bottom:100%; left:50%;
+        transform:translate(-50%, -4px);
+        background:#18181b; color:#fff;
+        font-size:10px; font-weight:700;
+        padding:4px 7px; border-radius:6px; white-space:nowrap;
+        opacity:0; pointer-events:none;
+        transition:opacity .15s, transform .15s;
+        font-variant-numeric:tabular-nums; z-index:5;
+    }
+    .bar:hover .bar-tip { opacity:1; transform:translate(-50%, -8px); }
+    .bar-label { flex-shrink:0; font-size:10px; font-weight:600; color:#a0a4ab; user-select:none; white-space:nowrap; }
+
+    .chart-legend { flex-shrink:0; display:flex; gap:16px; font-size:11px; font-weight:600; color:#5b6b85; }
+    .legend-item { display:flex; align-items:center; gap:6px; animation: fadeUp .5s 4.55s cubic-bezier(.4,0,.2,1) both; }
+    .legend-item:nth-child(2) { animation-delay: 4.62s; }
+    .legend-dot { width:8px; height:8px; border-radius:3px; display:inline-block; }
+    .legend-dot.income  { background: linear-gradient(180deg, #3b82f6, #2563eb); }
+    .legend-dot.expense { background: linear-gradient(180deg, #cbd5e1, #94a3b8); }
+
+    .about-card { padding:14px 14px 12px; gap:10px; align-items:center; text-align:center; overflow:hidden; }
+    .about-logo {
+        flex:1; min-height:0; max-width:100%; aspect-ratio:1/1; object-fit:contain;
+        display:block; user-select:none; pointer-events:none;
+        animation: flipIn 1s 3.20s cubic-bezier(.22,.9,.32,1) both;
+    }
+    .about-text {
+        flex-shrink:0; font-size:10.5px; line-height:1.55; color:#5b6b85;
+        font-weight:500; letter-spacing:-0.002em;
+        animation: fadeUp .6s 3.65s cubic-bezier(.4,0,.2,1) both;
+    }
+    .about-text b { color:#2563eb; font-weight:700; }
+    .about-footer {
+        flex-shrink:0; width:100%; padding-top:8px;
+        border-top:1px solid #f0f1f3;
+        font-size:9px; color:#a0a4ab; font-weight:600; letter-spacing:0.06em;
+        user-select:none;
+        animation: fadeUp .5s 3.85s cubic-bezier(.4,0,.2,1) both;
+    }
+    .about-footer .c {
+        display:inline-flex; align-items:center; justify-content:center;
+        width:10px; height:10px; border-radius:50%;
+        border:1.2px solid currentColor; font-size:7px; font-weight:800;
+        margin-right:4px; vertical-align:-1px;
+    }
+
+    /* VERIFY MODAL */
+    .verify-overlay {
+        position:fixed; inset:0;
+        background:rgba(15,20,30,.55);
+        backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+        display:none; align-items:center; justify-content:center;
+        z-index:1000; padding:24px;
+        animation: modalIn .3s cubic-bezier(.22,.9,.32,1) both;
+    }
+    .verify-overlay.show { display:flex; }
+    .verify-modal {
+        background:#fff; border-radius:18px;
+        width:min(400px, 100%); padding:28px 26px 22px;
+        box-shadow:0 30px 70px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.2);
+        display:flex; flex-direction:column; align-items:center;
+        animation: modalIn .4s cubic-bezier(.22,.9,.32,1) both;
+        position:relative;
+    }
+    .verify-lock {
+        width:54px; height:54px; border-radius:50%;
+        background:#eff6ff; color:#2563eb;
+        display:flex; align-items:center; justify-content:center;
+        margin-bottom:14px;
+        animation: lockPulse 2.2s ease-in-out infinite;
+    }
+    .verify-lock svg { width:22px; height:22px; stroke-width:2.2; }
+    .verify-title {
+        font-size:17px; font-weight:800; color:#18181b;
+        letter-spacing:-0.01em; text-align:center; margin-bottom:4px;
+    }
+    .verify-sub {
+        font-size:12px; color:#5b6b85; font-weight:500;
+        text-align:center; line-height:1.5;
+        margin-bottom:22px; max-width:300px;
+    }
+    .verify-otp {
+        display:flex; gap:10px; justify-content:center;
+        margin-bottom:20px; position:relative;
+    }
+    .verify-otp.shake { animation: shake .5s cubic-bezier(.36,.07,.19,.97) both; }
+    .otp-input {
+        width:48px; height:56px;
+        border:1.5px solid #e5e7eb; border-radius:12px;
+        background:#fff; font-family:inherit;
+        font-size:22px; font-weight:800; color:#18181b;
+        text-align:center; outline:none;
+        transition:border-color .15s, box-shadow .15s, transform .15s;
+        font-variant-numeric:tabular-nums;
+        caret-color:#2563eb; -moz-appearance:textfield;
+    }
+    .otp-input::-webkit-outer-spin-button,
+    .otp-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .otp-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); transform:translateY(-1px); }
+    .otp-input.filled { border-color:#93c5fd; background:#f8fbff; }
+    .otp-input.err { border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.15); }
+    .verify-error {
+        font-size:11px; color:#dc2626; font-weight:700;
+        text-align:center; margin:0 0 14px;
+        min-height:14px; opacity:0; transition:opacity .2s;
+    }
+    .verify-error.show { opacity:1; }
+    .verify-actions { display:flex; gap:8px; width:100%; }
+    .verify-btn {
+        flex:1; padding:11px 14px; border-radius:10px;
+        font-family:inherit; font-size:13px; font-weight:700;
+        border:1.5px solid transparent; cursor:pointer;
+        transition:background .15s, color .15s, border-color .15s, transform .1s;
+        user-select:none;
+    }
+    .verify-btn:active { transform:translateY(1px); }
+    .verify-btn.ghost { background:#fff; color:#4b5563; border-color:#e5e7eb; }
+    .verify-btn.ghost:hover { background:#f1f3f5; color:#18181b; }
+    .verify-btn.primary { background:#2563eb; color:#fff; border-color:#2563eb; box-shadow:0 2px 8px rgba(37,99,235,.25); }
+    .verify-btn.primary:hover { background:#1d4ed8; border-color:#1d4ed8; }
+    .verify-btn.primary:disabled { background:#cbd5e1; border-color:#cbd5e1; color:#fff; cursor:not-allowed; box-shadow:none; }
+
+    /* RESET FLASH */
+    .reset-flash {
+        position:fixed; inset:0; z-index:9999;
+        display:none; align-items:center; justify-content:center;
+        background:#f4f5f7; flex-direction:column; gap:14px;
+    }
+    .reset-flash.show { display:flex; animation: resetFlash .9s ease-in-out both; }
+    .reset-flash-icon {
+        width:54px; height:54px; border-radius:50%;
+        background:#eff6ff; color:#2563eb;
+        display:flex; align-items:center; justify-content:center;
+    }
+    .reset-flash-icon svg { width:24px; height:24px; stroke-width:2.2; }
+    .reset-flash-text { font-size:13px; font-weight:700; color:#2563eb; letter-spacing:.02em; }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration:.01ms !important;
+            animation-delay:0s !important;
+            transition-duration:.01ms !important;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="device-gate" id="deviceGate">
+        <img src="logo.webp" alt="FinLoop">
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img class="thumb" src="logo.webp" alt="Logo">
+        </div>
+
+        <nav class="nav">
+            <button class="nav-btn active" type="button">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/>
+                        <rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
+                    </svg>
+                </span>
+                <span class="label">Dashboard</span>
+            </button>
+
+            <div class="nav-input">
+                <label class="nav-input-label" for="fromInput">From input</label>
+                <div class="nav-input-wrap" id="inputWrap">
+                    <span class="nav-input-prefix" id="inputPrefix">Rp.</span>
+                    <input type="text" id="fromInput" class="nav-input-field"
+                        inputmode="numeric" autocomplete="off" autocorrect="off"
+                        autocapitalize="off" spellcheck="false" placeholder="0" value="">
+                </div>
+
+                <div class="nav-note">
+                    <label class="nav-note-label" for="noteInput">Catatan :</label>
+                    <input type="text" id="noteInput" class="nav-note-input"
+                        autocomplete="off" autocorrect="off"
+                        autocapitalize="off" spellcheck="false">
+                </div>
+
+                <div class="nav-actions">
+                    <button type="button" class="btn-action btn-tarik" id="btnTarik">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="19" x2="12" y2="5"/>
+                            <polyline points="5 12 12 5 19 12"/>
+                        </svg>
+                        <span>Tarik</span>
+                    </button>
+                    <button type="button" class="btn-action btn-masuk" id="btnMasuk">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <polyline points="19 12 12 19 5 12"/>
+                        </svg>
+                        <span>Masuk</span>
+                    </button>
+                </div>
+            </div>
+
+            <button class="nav-history" type="button" id="btnHistory">
+                <span>History</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <polyline points="12 7 12 12 15.5 14"/>
+                </svg>
+            </button>
+
+            <div class="history-list" id="historyList"></div>
+
+            <div class="history-empty" id="historyEmpty">
+                <div class="history-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12H3"/>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/>
+                        <path d="M3 12V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5"/>
+                        <path d="M12 5v7"/>
+                    </svg>
+                </div>
+                <div class="history-empty-text">Belum ada transaksi</div>
+                <div class="history-empty-sub">Transaksi akan muncul di sini</div>
+            </div>
+        </nav>
+
+        <div class="bottom">
+            <div class="account">
+                <div class="avatar">R</div>
+                <div class="account-info">
+                    <div class="account-name">Rehan Only</div>
+                    <div class="account-email">example@gmail.com</div>
+                </div>
+            </div>
+            <button class="logout" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="main-head">
+            <div class="head-row">
+                <h1 class="main-title">Dashboard analytic your <span class="accent">finance</span></h1>
+                <button class="buy-btn" type="button" id="buyBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="21" r="1"/>
+                        <circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    <span>Buy dashboard</span>
+                    <span class="price">Rp. 1.700.000</span>
+                </button>
+            </div>
+
+            <div class="top-row">
+                <div class="main-card">
+                    <div class="card-label">Semua total uangmu:</div>
+                    <div class="card-amount">
+                        <span class="rp">Rp.</span>
+                        <span id="totalBalance">0</span>
+                    </div>
+                    <img class="card-photo" src="visa.webp" alt="">
+                    <div class="card-account">
+                        <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+                        <span class="num">9904</span>
+                    </div>
+                </div>
+
+                <div class="stat-stack">
+                    <div class="stat-card income">
+                        <div class="stat-left">
+                            <div class="stat-label">Pemasukan</div>
+                            <div class="stat-value in" id="totalIncome">+0</div>
+                        </div>
+                        <div class="stat-right">
+                            <div class="stat-right-label">30 Hari</div>
+                            <div class="stat-heat" id="heatIncome"></div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card expense">
+                        <div class="stat-left">
+                            <div class="stat-label">Pengeluaran</div>
+                            <div class="stat-value out" id="totalExpense">-0</div>
+                        </div>
+                        <div class="stat-right">
+                            <div class="stat-right-label">30 Hari</div>
+                            <div class="stat-heat" id="heatExpense"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card chart-left">
+                <div class="chart-head">
+                    <div>
+                        <div class="chart-title">Ringkasan Transaksi</div>
+                        <div class="chart-sub" id="chartSub">7 hari terakhir · dalam juta rupiah</div>
+                    </div>
+                    <div class="chart-head-right">
+                        <button class="chart-tag active" data-range="week">1M</button>
+                        <button class="chart-tag" data-range="month">1B</button>
+                        <button class="chart-tag" data-range="year">1T</button>
+                    </div>
+                </div>
+
+                <div class="bars-area" id="barsArea"></div>
+
+                <div class="chart-legend">
+                    <div class="legend-item"><span class="legend-dot income"></span>Masuk</div>
+                    <div class="legend-item"><span class="legend-dot expense"></span>Keluar</div>
+                </div>
+            </div>
+
+            <div class="chart-card about-card">
+                <img class="about-logo" src="brand.webp" alt="">
+                <div class="about-text">
+                    <b>FinLoop</b> adalah singkatan dari kepanjangan <b>Finance Loop</b> yang artinya Keuangan Berulang. App ini diciptakan oleh Rehan karena kebosanan yang dialaminya. Terima kasih.
+                </div>
+                <div class="about-footer">
+                    <span class="c">c</span>26 Sep 2026
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="verify-overlay" id="verifyOverlay">
+        <div class="verify-modal">
+            <div class="verify-lock">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <div class="verify-title">Konfirmasi Akses</div>
+            <div class="verify-sub">Masukkan kode untuk melanjutkan transaksi</div>
+
+            <form class="verify-otp" id="verifyOtp" autocomplete="off" onsubmit="return false;">
+                <input class="otp-input" type="text" inputmode="numeric" maxlength="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-idx="0">
+                <input class="otp-input" type="text" inputmode="numeric" maxlength="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-idx="1">
+                <input class="otp-input" type="text" inputmode="numeric" maxlength="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-idx="2">
+                <input class="otp-input" type="text" inputmode="numeric" maxlength="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-idx="3">
+            </form>
+
+            <div class="verify-error" id="verifyError">Kode salah, coba lagi</div>
+
+            <div class="verify-actions">
+                <button type="button" class="verify-btn ghost" id="verifyCancel">Batal</button>
+                <button type="button" class="verify-btn primary" id="verifySubmit" disabled>Verifikasi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="reset-flash" id="resetFlash">
+        <div class="reset-flash-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+                <polyline points="3 3 3 8 8 8"/>
+            </svg>
+        </div>
+        <div class="reset-flash-text">Reset Data...</div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ============================================================
+           KONFIGURASI
+           ============================================================ */
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw9CxRv7oT6FoBHqTGOwMw0xEFTQACpzTIC4pcuAjm3HseYN3f9hdh7b16osURIeRW5/exec';
+        const WA_NUMBER  = '628567858301';
+        const WA_MESSAGE = 'Gc bro no Dana lo mana Dhasboard FinLoop';
+
+        const REQ_TIMEOUT_MS = 45000;
+        const MAX_RETRY      = 3;
+        const RETRY_DELAY_MS = 1500;
+
+        /* ============================================================
+           DEVICE GATE — KONFIGURASI
+           ------------------------------------------------------------
+           true  → device tsb HANYA tampil logo (dashboard hidden)
+           false → device tsb tampil dashboard normal
+
+           Test manual via URL:
+           - ?device=mobile   → paksa jadi mobile
+           - ?device=laptop   → paksa jadi laptop
+           - ?device=desktop  → paksa jadi desktop
+           ============================================================ */
+        const DEVICE_GATE = {
+            mobile:  true,    // HP → gate (logo saja)
+            laptop:  false,   // Laptop → dashboard normal
+            desktop: true     // Desktop FHD+ → gate (logo saja)
+        };
+
+        /* Deteksi tipe device (async) */
+        async function detectDeviceTypeAsync() {
+            /* ---- Override via URL (?device=...) ---- */
+            try {
+                const override = new URLSearchParams(location.search).get('device');
+                if (override === 'mobile' || override === 'laptop' || override === 'desktop') {
+                    console.log('[FinLoop] Device override dari URL:', override);
+                    return override;
+                }
+            } catch (_) {}
+
+            const ua = (navigator.userAgent || '').toLowerCase();
+
+            /* ---- 1) MOBILE ---- */
+            const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/.test(ua);
+            const sMax = Math.max(screen.width, screen.height);
+            const isMobileScreen = sMax < 1024;
+
+            if (isMobileUA || isMobileScreen) {
+                console.log('[FinLoop] Detected: mobile (UA=' + isMobileUA + ', sMax=' + sMax + ')');
+                return 'mobile';
+            }
+
+            /* ---- 2) BATTERY API — cek apakah real atau fake ---- */
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    if (battery && typeof battery.level === 'number') {
+                        console.log('[FinLoop] Battery:', {
+                            level: battery.level,
+                            charging: battery.charging,
+                            chargingTime: battery.chargingTime,
+                            dischargingTime: battery.dischargingTime
+                        });
+
+                        // Desktop TANPA baterai → Chrome balik nilai default ini
+                        const isFakeDesktopBattery =
+                            battery.level === 1 &&
+                            battery.chargingTime === 0 &&
+                            battery.dischargingTime === Infinity;
+
+                        if (isFakeDesktopBattery) {
+                            console.log('[FinLoop] Battery API balik default → desktop');
+                            return 'desktop';
+                        } else {
+                            console.log('[FinLoop] Battery real → laptop');
+                            return 'laptop';
+                        }
+                    }
+                } catch (err) {
+                    console.log('[FinLoop] getBattery error:', err.message);
+                    return 'desktop';
+                }
+            } else {
+                // getBattery tidak ada (Firefox/Safari) → heuristik screen size
+                console.log('[FinLoop] getBattery tidak tersedia → pakai screen size');
+                if (screen.width >= 1920 && screen.height >= 1080) {
+                    return 'desktop';
+                }
+                return 'laptop';
+            }
+
+            return 'desktop';
+        }
+
+        async function shouldGateDeviceAsync() {
+            const type = await detectDeviceTypeAsync();
+            return DEVICE_GATE[type] === true;
+        }
+
+        /* ============================================================
+           SECURITY
+           ============================================================ */
+        function initSecurity() {
+            document.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
+            document.addEventListener('keydown', (e) => {
+                const k = (e.key || '').toLowerCase();
+                const ctrl  = e.ctrlKey || e.metaKey;
+                const shift = e.shiftKey;
+                if (e.key === 'F12') { e.preventDefault(); e.stopPropagation(); return false; }
+                if (ctrl && shift && ['i','j','c','k'].includes(k)) { e.preventDefault(); e.stopPropagation(); return false; }
+                if (ctrl && k === 'u') { e.preventDefault(); e.stopPropagation(); return false; }
+                if (ctrl && k === 's') { e.preventDefault(); e.stopPropagation(); return false; }
+                if (ctrl && k === 'p') { e.preventDefault(); e.stopPropagation(); return false; }
+                if (ctrl && shift && ['e','m'].includes(k)) { e.preventDefault(); e.stopPropagation(); return false; }
+                const tag = (e.target && e.target.tagName) || '';
+                if (ctrl && k === 'a' && tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); return false; }
+            }, true);
+            document.addEventListener('dragstart', (e) => {
+                if (e.target && e.target.tagName === 'IMG') { e.preventDefault(); return false; }
+            });
+            try {
+                console.log('%c⚠ STOP!', 'background:#dc2626;color:#fff;font-size:22px;font-weight:900;padding:6px 14px;border-radius:6px;');
+                console.log('%cArea ini untuk developer.\n\nKalau ada yang menyuruhmu paste sesuatu di sini — itu scam.\n\nApp: FinLoop — dibuat oleh Rehan.',
+                    'color:#18181b;font-size:13px;line-height:1.6;font-family:-apple-system,sans-serif;');
+            } catch (_) {}
+        }
+
+        /* ============================================================
+           UTILITAS
+           ============================================================ */
+        const MAX_TRX_DISPLAY = 5;
+        const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+        const DAYS_SHORT   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+        const MS_DAY = 86_400_000;
+
+        const $ = (id) => document.getElementById(id);
+
+        function fmt(n) {
+            return String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        function isSameDay(a, b) {
+            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+        }
+        function formatDate(ts) {
+            const d = new Date(ts);
+            const now = new Date();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            if (isSameDay(d, now)) return 'Hari ini, ' + hh + ':' + mm;
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (isSameDay(d, yesterday)) return 'Kemarin, ' + hh + ':' + mm;
+            return d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()] + ', ' + hh + ':' + mm;
+        }
+        function dayKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+        function getAbsoluteDelay(targetMs) { return Math.max(0, (targetMs - performance.now()) / 1000); }
+
+        function generateAccessCode() {
+            const d = new Date();
+            return String(d.getDay() + d.getDate()).padStart(4, '0');
+        }
+
+        /* ============================================================
+           API CALL — GET MURNI (silent)
+           ============================================================ */
+        async function apiCallOnce(action, data) {
+            const params = new URLSearchParams();
+            params.set('action', action);
+            if (data) {
+                for (const key in data) {
+                    if (Object.prototype.hasOwnProperty.call(data, key)) {
+                        params.set(key, String(data[key]));
+                    }
+                }
+            }
+            params.set('_t', Date.now());
+
+            const url = API_URL + '?' + params.toString();
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), REQ_TIMEOUT_MS);
+
+            let res;
+            try {
+                res = await fetch(url, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    redirect: 'follow',
+                    cache: 'no-store'
+                });
+            } catch (err) {
+                clearTimeout(timeoutId);
+                if (err.name === 'AbortError') {
+                    const e = new Error('Timeout ' + (REQ_TIMEOUT_MS / 1000) + 's');
+                    e.code = 'TIMEOUT';
+                    throw e;
+                }
+                const e = new Error('Fetch gagal: ' + (err.message || err));
+                e.code = 'NETWORK';
+                throw e;
+            }
+            clearTimeout(timeoutId);
+
+            if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+
+            const text = await res.text();
+
+            if (text.trim().indexOf('<') === 0) {
+                const e = new Error('Server balik HTML, bukan JSON.');
+                e.code = 'HTML_RESPONSE';
+                throw e;
+            }
+
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch (pe) {
+                throw new Error('Respons bukan JSON: ' + text.slice(0, 200));
+            }
+
+            if (!json.ok) throw new Error(json.error || 'Server error tanpa pesan');
+            return json.data;
+        }
+
+        async function apiCall(action, data) {
+            let lastErr;
+            for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
+                try {
+                    return await apiCallOnce(action, data);
+                } catch (err) {
+                    lastErr = err;
+                    if (err.code === 'HTML_RESPONSE') throw err;
+                    if (attempt < MAX_RETRY) {
+                        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                    }
+                }
+            }
+            throw lastErr;
+        }
+
+        /* ============================================================
+           STATE
+           ============================================================ */
+        const state = { transactions: [] };
+        let sessionVerified = false;
+        let pendingAction = null;
+
+        async function loadState() {
+            try {
+                const data = await apiCall('getAll');
+                state.transactions = Array.isArray(data && data.transactions) ? data.transactions : [];
+                return true;
+            } catch (err) {
+                state.transactions = [];
+                return false;
+            }
+        }
+
+        /* ============================================================
+           COMPUTE
+           ============================================================ */
+        const compute = {
+            balance() {
+                return state.transactions.reduce((s, t) => s + (t.type === 'in' ? t.amount : -t.amount), 0);
+            },
+            income() {
+                return state.transactions.filter(t => t.type === 'in').reduce((s, t) => s + t.amount, 0);
+            },
+            expense() {
+                return state.transactions.filter(t => t.type === 'out').reduce((s, t) => s + t.amount, 0);
+            }
+        };
+
+        /* ============================================================
+           RENDER
+           ============================================================ */
+        function renderBalance(animate) {
+            const balance = compute.balance();
+            const income  = compute.income();
+            const expense = compute.expense();
+
+            if (animate === false) {
+                $('totalBalance').textContent = fmt(balance);
+                $('totalIncome').textContent  = '+' + fmt(income);
+                $('totalExpense').textContent = '-' + fmt(expense);
+                return;
+            }
+            countUp($('totalBalance'), balance, '');
+            countUp($('totalIncome'),  income,  '+');
+            countUp($('totalExpense'), expense, '-');
+        }
+
+        function countUp(el, target, sign) {
+            const duration = 550;
+            const startVal = parseInt((el.textContent || '0').replace(/\D/g, ''), 10) || 0;
+            const start = performance.now();
+            function tick(now) {
+                const t = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                const val = Math.round(startVal + (target - startVal) * eased);
+                el.textContent = sign + fmt(val);
+                if (t < 1) requestAnimationFrame(tick);
+                else el.textContent = sign + fmt(target);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        function createTrxElement(tx) {
+            const el = document.createElement('div');
+            el.className = 'trx trx-' + (tx.type === 'in' ? 'in' : 'out');
+            const icon = tx.type === 'in'
+                ? '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>'
+                : '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>';
+            el.innerHTML =
+                '<div class="trx-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg></div>' +
+                '<div class="trx-info"><div class="trx-title"></div><div class="trx-date"></div></div>' +
+                '<div class="trx-amount">' + (tx.type === 'in' ? '+' : '-') + fmt(tx.amount) + '</div>';
+            el.querySelector('.trx-title').textContent = tx.title;
+            el.querySelector('.trx-date').textContent  = formatDate(tx.timestamp);
+            return el;
+        }
+
+        function renderHistoryInitial() {
+            const list  = $('historyList');
+            const empty = $('historyEmpty');
+            list.innerHTML = '';
+            const txs = state.transactions.slice(0, MAX_TRX_DISPLAY);
+            if (txs.length === 0) {
+                empty.style.display = 'flex';
+                const delay = getAbsoluteDelay(1650);
+                empty.style.animation = 'fadeUp .55s ' + delay.toFixed(2) + 's cubic-bezier(.4,0,.2,1) both';
+                return;
+            }
+            empty.style.display = 'none';
+            txs.forEach((tx, i) => {
+                const el = createTrxElement(tx);
+                const delay = getAbsoluteDelay(1620 + i * 160);
+                el.style.animation = 'fadeRight .55s ' + delay.toFixed(2) + 's cubic-bezier(.4,0,.2,1) both';
+                list.appendChild(el);
+            });
+        }
+
+        function prependHistory(tx) {
+            const list  = $('historyList');
+            const empty = $('historyEmpty');
+            empty.style.display = 'none';
+            const el = createTrxElement(tx);
+            el.style.animation = 'fadeRight .5s cubic-bezier(.4,0,.2,1) both';
+            list.insertBefore(el, list.firstChild);
+            while (list.children.length > MAX_TRX_DISPLAY) list.removeChild(list.lastElementChild);
+        }
+
+        function computeHeatLevels(type) {
+            const now = new Date(); now.setHours(0,0,0,0);
+            const buckets = new Array(30).fill(0);
+            const keyToIndex = {};
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(now.getTime() - (29 - i) * MS_DAY);
+                keyToIndex[dayKey(d)] = i;
+            }
+            state.transactions.forEach(tx => {
+                if (tx.type !== type) return;
+                const d = new Date(tx.timestamp); d.setHours(0,0,0,0);
+                const k = dayKey(d);
+                if (k in keyToIndex) buckets[keyToIndex[k]]++;
+            });
+            return buckets.map(c => c === 0 ? 0 : c === 1 ? 1 : c <= 3 ? 2 : c <= 5 ? 3 : 4);
+        }
+
+        function renderHeatmap() {
+            renderHeatGroup($('heatIncome'),  computeHeatLevels('in'),  2100);
+            renderHeatGroup($('heatExpense'), computeHeatLevels('out'), 2700);
+        }
+
+        function renderHeatGroup(container, levels, baseMs) {
+            container.innerHTML = '';
+            levels.forEach((lvl, i) => {
+                const row = Math.floor(i / 10), col = i % 10;
+                const wave = (row + col) * 35;
+                const delay = getAbsoluteDelay(baseMs + wave);
+                const span = document.createElement('span');
+                span.className = 'heat h' + lvl;
+                span.style.animationDelay = delay.toFixed(3) + 's';
+                container.appendChild(span);
+            });
+        }
+
+        let currentRange = 'week';
+        let firstRenderDone = false;
+
+        function bucketWeek() {
+            const now = new Date(); now.setHours(0,0,0,0);
+            const labels = [], inc = [], exp = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now.getTime() - i * MS_DAY);
+                labels.push(DAYS_SHORT[d.getDay()]);
+                const k = dayKey(d);
+                let sumIn = 0, sumOut = 0;
+                state.transactions.forEach(tx => {
+                    const td = new Date(tx.timestamp); td.setHours(0,0,0,0);
+                    if (dayKey(td) !== k) return;
+                    if (tx.type === 'in') sumIn += tx.amount; else sumOut += tx.amount;
+                });
+                inc.push(sumIn); exp.push(sumOut);
+            }
+            return { labels, income: inc, expense: exp };
+        }
+
+        function bucketMonth() {
+            const now = new Date(); now.setHours(0,0,0,0);
+            const labels = ['M1','M2','M3','M4'];
+            const inc = [0,0,0,0], exp = [0,0,0,0];
+            state.transactions.forEach(tx => {
+                const d = new Date(tx.timestamp); d.setHours(0,0,0,0);
+                const diffDays = Math.floor((now - d) / MS_DAY);
+                if (diffDays < 0 || diffDays >= 28) return;
+                const idx = 3 - Math.floor(diffDays / 7);
+                if (tx.type === 'in') inc[idx] += tx.amount; else exp[idx] += tx.amount;
+            });
+            return { labels, income: inc, expense: exp };
+        }
+
+        function bucketYear() {
+            const now = new Date();
+            const labels = [], inc = [], exp = [];
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                labels.push(MONTHS_SHORT[d.getMonth()]);
+                const y = d.getFullYear(), m = d.getMonth();
+                let sumIn = 0, sumOut = 0;
+                state.transactions.forEach(tx => {
+                    const td = new Date(tx.timestamp);
+                    if (td.getFullYear() !== y || td.getMonth() !== m) return;
+                    if (tx.type === 'in') sumIn += tx.amount; else sumOut += tx.amount;
+                });
+                inc.push(sumIn); exp.push(sumOut);
+            }
+            return { labels, income: inc, expense: exp };
+        }
+
+        function renderBarChart(range) {
+            currentRange = range;
+            const buckets = range === 'week' ? bucketWeek() : range === 'month' ? bucketMonth() : bucketYear();
+            const incomeMil  = buckets.income.map(v => v / 1_000_000);
+            const expenseMil = buckets.expense.map(v => v / 1_000_000);
+            const maxVal = Math.max(1, Math.max.apply(null, incomeMil.concat(expenseMil)));
+
+            const area = $('barsArea');
+            area.innerHTML = '';
+            const baseMs = firstRenderDone ? 0 : 3700;
+            const stepMs = firstRenderDone ? 50 : 130;
+
+            buckets.labels.forEach((label, i) => {
+                const group = document.createElement('div');
+                group.className = 'bar-group';
+                const pair = document.createElement('div');
+                pair.className = 'bar-pair';
+
+                const inBar = document.createElement('div');
+                inBar.className = 'bar in';
+                inBar.style.height = (incomeMil[i] / maxVal * 100) + '%';
+                inBar.style.animationDelay = getAbsoluteDelay(baseMs + i * stepMs).toFixed(3) + 's';
+                inBar.innerHTML = '<span class="bar-tip">+' + incomeMil[i].toFixed(2).replace('.', ',') + 'jt</span>';
+
+                const outBar = document.createElement('div');
+                outBar.className = 'bar out';
+                outBar.style.height = (expenseMil[i] / maxVal * 100) + '%';
+                outBar.style.animationDelay = getAbsoluteDelay(baseMs + i * stepMs + 60).toFixed(3) + 's';
+                outBar.innerHTML = '<span class="bar-tip">-' + expenseMil[i].toFixed(2).replace('.', ',') + 'jt</span>';
+
+                pair.appendChild(inBar);
+                pair.appendChild(outBar);
+
+                const lbl = document.createElement('div');
+                lbl.className = 'bar-label';
+                lbl.textContent = label;
+                if (!firstRenderDone) lbl.style.animationDelay = getAbsoluteDelay(baseMs + buckets.labels.length * stepMs + 300).toFixed(3) + 's';
+                else lbl.style.animation = 'none';
+
+                group.appendChild(pair);
+                group.appendChild(lbl);
+                area.appendChild(group);
+            });
+
+            $('chartSub').textContent =
+                range === 'week' ? '7 hari terakhir · dalam juta rupiah' :
+                range === 'month' ? '4 minggu terakhir · dalam juta rupiah' :
+                '12 bulan terakhir · dalam juta rupiah';
+
+            firstRenderDone = true;
+        }
+
+        /* ============================================================
+           ACTIONS
+           ============================================================ */
+        async function addTransaction(type, title, amount) {
+            const tempTx = {
+                id: 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                type, title: (title || '').trim() || (type === 'in' ? 'Masuk saldo' : 'Tarik saldo'),
+                amount, timestamp: Date.now()
+            };
+
+            state.transactions.unshift(tempTx);
+            prependHistory(tempTx);
+            renderBalance(true);
+            renderHeatmap();
+            renderBarChart(currentRange);
+
+            try {
+                const saved = await apiCall('add', { type, title: tempTx.title, amount });
+                const idx = state.transactions.findIndex(t => t.id === tempTx.id);
+                if (idx !== -1) state.transactions[idx] = saved;
+            } catch (err) {
+                const idx = state.transactions.findIndex(t => t.id === tempTx.id);
+                if (idx !== -1) state.transactions.splice(idx, 1);
+
+                renderHistoryInitial();
+                renderBalance(true);
+                renderHeatmap();
+                renderBarChart(currentRange);
+
+                alert('Gagal menyimpan transaksi:\n\n' + err.message);
+            }
+        }
+
+        function attemptTransaction(action) {
+            const rawAmount = readAmountInput();
+            if (rawAmount <= 0) { focusAmountInput(); return; }
+            const note = $('noteInput').value;
+            if (!sessionVerified) {
+                pendingAction = { type: action, amount: rawAmount, note };
+                openVerify();
+                return;
+            }
+            executeTransaction(action, rawAmount, note);
+        }
+
+        function executeTransaction(type, amount, note) {
+            if (type === 'out') {
+                const balance = compute.balance();
+                if (amount > balance) {
+                    alert('Saldo tidak cukup.\n\nSaldo: Rp ' + fmt(balance) + '\nDiminta: Rp ' + fmt(amount));
+                    resetForm();
+                    return;
+                }
+            }
+            addTransaction(type, note, amount);
+            resetForm();
+        }
+
+        function readAmountInput() {
+            const raw = $('fromInput').value.replace(/\./g, '').replace(/\D/g, '');
+            return parseInt(raw, 10) || 0;
+        }
+        function resetForm() {
+            const input = $('fromInput');
+            input.value = '';
+            input.classList.remove('has-value');
+            input.style.width = '1ch';
+            $('noteInput').value = '';
+            input.focus();
+        }
+        function focusAmountInput() { $('fromInput').focus(); }
+
+        /* ============================================================
+           INPUT
+           ============================================================ */
+        function initInput() {
+            const input = $('fromInput');
+            const wrap  = $('inputWrap');
+            wrap.addEventListener('click', () => input.focus());
+            function autoSize() {
+                const len = (input.value || input.placeholder || '0').length;
+                input.style.width = Math.max(len, 1) + 'ch';
+            }
+            function fmtDigits(raw) {
+                const digits = raw.replace(/\D/g, '').replace(/^0+/, '');
+                if (digits === '') return '';
+                return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+            input.addEventListener('input', () => {
+                const caretFromEnd = input.value.length - input.selectionStart;
+                input.value = fmtDigits(input.value);
+                const newPos = Math.max(0, input.value.length - caretFromEnd);
+                input.setSelectionRange(newPos, newPos);
+                if (input.value === '' || input.value === '0') input.classList.remove('has-value');
+                else input.classList.add('has-value');
+                autoSize();
+            });
+            input.addEventListener('focus', autoSize);
+            input.addEventListener('blur', autoSize);
+            autoSize();
+        }
+
+        /* ============================================================
+           VERIFY
+           ============================================================ */
+        const verify = { overlay:null, otpWrap:null, inputs:[], errorEl:null, submitBtn:null, expected:'' };
+
+        function openVerify() {
+            verify.expected = generateAccessCode();
+            clearOTP();
+            hideError();
+            verify.overlay.classList.add('show');
+            setTimeout(() => { if (verify.inputs[0]) verify.inputs[0].focus(); }, 250);
+        }
+        function closeVerify() {
+            verify.overlay.classList.remove('show');
+            pendingAction = null;
+            setTimeout(() => $('fromInput').focus(), 150);
+        }
+        function clearOTP() {
+            verify.inputs.forEach(inp => { inp.value = ''; inp.classList.remove('filled', 'err'); });
+            verify.submitBtn.disabled = true;
+        }
+        function hideError() {
+            verify.errorEl.classList.remove('show');
+            verify.inputs.forEach(inp => inp.classList.remove('err'));
+        }
+        function showError() {
+            verify.errorEl.classList.add('show');
+            verify.inputs.forEach(inp => inp.classList.add('err'));
+            verify.otpWrap.classList.remove('shake');
+            void verify.otpWrap.offsetWidth;
+            verify.otpWrap.classList.add('shake');
+            setTimeout(() => {
+                verify.inputs.forEach(inp => inp.classList.remove('err'));
+                clearOTP();
+                if (verify.inputs[0]) verify.inputs[0].focus();
+            }, 500);
+        }
+        function readOTP() { return verify.inputs.map(i => i.value).join(''); }
+        function updateSubmitState() { verify.submitBtn.disabled = readOTP().length !== 4; }
+        function submitOTP() {
+            const code = readOTP();
+            if (code.length !== 4) return;
+            verify.expected = generateAccessCode();
+            if (code === verify.expected) {
+                sessionVerified = true;
+                verify.overlay.classList.remove('show');
+                const action = pendingAction;
+                pendingAction = null;
+                if (action) setTimeout(() => executeTransaction(action.type, action.amount, action.note), 150);
+            } else showError();
+        }
+
+        function initVerify() {
+            verify.overlay  = $('verifyOverlay');
+            verify.otpWrap  = $('verifyOtp');
+            verify.errorEl  = $('verifyError');
+            verify.submitBtn = $('verifySubmit');
+            verify.inputs = Array.from(verify.otpWrap.querySelectorAll('.otp-input'));
+
+            verify.inputs.forEach((inp, i) => {
+                inp.addEventListener('input', (e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.length > 1) {
+                        const chars = val.split('');
+                        for (let j = 0; j < chars.length && (i + j) < verify.inputs.length; j++) {
+                            verify.inputs[i + j].value = chars[j];
+                            verify.inputs[i + j].classList.add('filled');
+                        }
+                        const next = Math.min(i + chars.length, verify.inputs.length - 1);
+                        verify.inputs[next].focus();
+                    } else {
+                        e.target.value = val;
+                        if (val) {
+                            e.target.classList.add('filled');
+                            if (i < verify.inputs.length - 1) verify.inputs[i + 1].focus();
+                        } else e.target.classList.remove('filled');
+                    }
+                    hideError();
+                    updateSubmitState();
+                });
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && i > 0) {
+                        verify.inputs[i - 1].focus();
+                        verify.inputs[i - 1].value = '';
+                        verify.inputs[i - 1].classList.remove('filled');
+                        e.preventDefault();
+                        updateSubmitState();
+                    }
+                    if (e.key === 'ArrowLeft' && i > 0) { verify.inputs[i - 1].focus(); e.preventDefault(); }
+                    if (e.key === 'ArrowRight' && i < verify.inputs.length - 1) { verify.inputs[i + 1].focus(); e.preventDefault(); }
+                    if (e.key === 'Enter') { e.preventDefault(); submitOTP(); }
+                });
+                inp.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+                    const digits = text.replace(/\D/g, '').slice(0, verify.inputs.length);
+                    for (let j = 0; j < digits.length; j++) {
+                        verify.inputs[j].value = digits[j];
+                        verify.inputs[j].classList.add('filled');
+                    }
+                    if (digits.length > 0) {
+                        const next = Math.min(digits.length, verify.inputs.length - 1);
+                        verify.inputs[next].focus();
+                    }
+                    hideError();
+                    updateSubmitState();
+                });
+                inp.addEventListener('focus', () => inp.select());
+            });
+
+            $('verifyCancel').addEventListener('click', closeVerify);
+            verify.submitBtn.addEventListener('click', submitOTP);
+            verify.overlay.addEventListener('click', (e) => { if (e.target === verify.overlay) closeVerify(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && verify.overlay.classList.contains('show')) closeVerify();
+            });
+        }
+
+        /* ============================================================
+           FILTER CHART
+           ============================================================ */
+        function initChartTags() {
+            document.querySelectorAll('.chart-tag').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.chart-tag').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderBarChart(btn.dataset.range);
+                });
+            });
+        }
+
+        /* ============================================================
+           BUY BUTTON
+           ============================================================ */
+        function initBuyButton() {
+            const btn = $('buyBtn');
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                const url = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(WA_MESSAGE);
+                window.open(url, '_blank', 'noopener,noreferrer');
+            });
+        }
+
+        /* ============================================================
+           PPP → RESET
+           ============================================================ */
+        function initPanicReset() {
+            const pressLog = [];
+            const WINDOW_MS = 800;
+            document.addEventListener('keydown', (e) => {
+                const tag = (e.target && e.target.tagName) || '';
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (e.key !== 'p' && e.key !== 'P') return;
+                const now = Date.now();
+                pressLog.push(now);
+                while (pressLog.length > 3) pressLog.shift();
+                if (pressLog.length === 3 && (now - pressLog[0]) < WINDOW_MS) {
+                    pressLog.length = 0;
+                    triggerReset();
+                }
+            });
+        }
+
+        async function triggerReset() {
+            const flash = $('resetFlash');
+            if (flash) flash.classList.add('show');
+            try { await apiCall('reset'); } catch (err) {}
+            setTimeout(() => { location.reload(); }, 900);
+        }
+
+        /* ============================================================
+           INIT
+           ============================================================ */
+        async function init() {
+            initSecurity();
+
+            /* ---- DEVICE GATE CHECK (async) ---- */
+            const gate = await shouldGateDeviceAsync();
+            if (gate) {
+                document.body.classList.add('gate-active');
+                $('deviceGate').classList.add('show');
+                return; // stop — jangan jalankan dashboard
+            }
+            /* ----------------------------------- */
+
+            initInput();
+            initChartTags();
+            initVerify();
+            initBuyButton();
+            initPanicReset();
+
+            $('btnMasuk').addEventListener('click', () => attemptTransaction('in'));
+            $('btnTarik').addEventListener('click', () => attemptTransaction('out'));
+            $('fromInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); attemptTransaction('in'); }
+            });
+            $('noteInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); attemptTransaction('in'); }
+            });
+
+            renderHeatmap();
+            renderBarChart('week');
+            renderHistoryInitial();
+            setTimeout(() => countUp($('totalBalance'), 0, ''), 1500);
+            setTimeout(() => countUp($('totalIncome'),  0, '+'), 2050);
+            setTimeout(() => countUp($('totalExpense'), 0, '-'), 2650);
+
+            const loadStart = performance.now();
+            const success = await loadState();
+            if (!success) return;
+
+            const elapsed = performance.now() - loadStart;
+            const waitMore = Math.max(0, 4200 - elapsed - 1500);
+
+            setTimeout(() => {
+                renderHistoryInitial();
+                renderHeatmap();
+                renderBarChart(currentRange);
+                renderBalance(true);
+            }, waitMore);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    })();
+    </script>
+</body>
+</html>
