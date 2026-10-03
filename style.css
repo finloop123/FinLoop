@@ -814,9 +814,9 @@ html.has-session .page-dashboard {
     background-size:cover; background-position:center; background-repeat:no-repeat;
     margin-left:4px;
 }
-.lb-row.lb-top-1::after { background-image:url("https://finloop.vercel.app/private-assets/image/1.webp"); }
-.lb-row.lb-top-2::after { background-image:url("https://finloop.vercel.app/private-assets/image/2.webp"); }
-.lb-row.lb-top-3::after { background-image:url("https://finloop.vercel.app/private-assets/image/3.webp"); }
+.lb-row.lb-top-1::after { background-image:url("https://fin-loop-backand.vercel.app/private-assets/image/1.webp"); }
+.lb-row.lb-top-2::after { background-image:url("https://fin-loop-backand.vercel.app/private-assets/image/2.webp"); }
+.lb-row.lb-top-3::after { background-image:url("https://fin-loop-backand.vercel.app/private-assets/image/3.webp"); }
 
 .lb-row.lb-me {
     background:linear-gradient(90deg, rgba(24,24,27,.055) 0%, rgba(24,24,27,.02) 45%, rgba(24,24,27,0) 100%);
