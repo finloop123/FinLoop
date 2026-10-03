@@ -16,8 +16,8 @@ export const firebaseConfig = {
 /* ---------- API (Vercel) ----------
    Ganti finloop.vercel.app dengan URL Vercel asli kamu.
 ------------------------------------ */
-export const API_URL    = 'https://finloop.vercel.app/api/v1/finloop';
-export const ASSET_URL  = 'https://finloop.vercel.app/private-assets';
+export const API_URL    = 'https://fin-loop-backand.vercel.app/api/v1/finloop';
+export const ASSET_URL  = 'https://fin-loop-backand.vercel.app/private-assets';
 
 /* ---------- CLIENT KEY ---------- */
 export const CLIENT_KEY = 'finloop_local_dev_key_2026';
